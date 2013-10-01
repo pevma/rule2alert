@@ -48,8 +48,10 @@ New features:
 
 (
 EXAMPLE - to make use of the above two(in the rules2alert directory execute):
+
 python r2a.py -C /etc/suricata/suricata.yaml -f rules/emerging-all.rules -w test1.pcap -F -T -e 1.1.1.1 -m 192.168.1.1
-given that you have emerging-all.rules in your rules directory under rules2alert.
+
+- given that you have emerging-all.rules in your rules directory under rules2alert.
 
 After whch you will have all the rule/pcap pairs under the rules2alert/output directory.
 
