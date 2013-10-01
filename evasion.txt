@@ -1,0 +1,14 @@
+1 - FakeRST
+	Credit: Judy Novak
+	Type: Client
+	This evades IDS if the target system is a Linux Server
+	In order to catch, the server must have the IDS policy set to Linux
+	Default is BSD
+
+	The ACK packet in the handshake has an increased ACK #
+	which generates a RST from the server.  The client then
+	proceeds to send the correct ACK which is accepted by
+	the Linux server due to the nature of SYN-Cookies.
+	If Snort is not set to a Linux based policy for stream
+	reassembly, the IDS will drop the stream after observing
+	the RST packet.

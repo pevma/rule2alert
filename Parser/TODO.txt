@@ -1,0 +1,5 @@
+
+TODO
+====
+
+At the moment, the general options are added to a list called "options". This is a "temporal" list. We should create other lists and attributes in class Rule, like for example "contents" and "sid"
