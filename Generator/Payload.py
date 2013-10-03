@@ -303,12 +303,14 @@ class PayloadGenerator:
 		self.dst = re.sub("\$",'',self.dst)
 		sports   = re.sub("\$",'',sports)
 		dports   = re.sub("\$",'',dports)
-		#print self.src, "SRC", self.dst, "DST"
+		#print self.src, "SRC!!", self.dst, "DST!!"
 		
 		for var in self.snort_vars:
+			
 			m = re.search(var, self.src)
 			if m:
 				self.src = re.sub(var, self.snort_vars[var], self.src)
+				self.src = re.sub("\$",'',self.src)
 				break
 				
 		for var in self.snort_vars:
@@ -330,12 +332,16 @@ class PayloadGenerator:
 			print self.dst , "SELF>DST"
 			
 		if self.src.find("!") != -1:
-			if self.src.find(self.snort_vars["HOME_NET"]) != -1:
+			self.src = re.sub("!",'',self.src)
+			if self.src.find(self.snort_vars["HOME_NET"]) != -1: 
 				self.src = self.snort_vars["EXTERNAL_NET"]
 			elif self.src.find(self.snort_vars["EXTERNAL_NET"]) != -1:
 				self.src = self.snort_vars["HOME_NET"]
 				
+				
+			
 		if self.dst.find("!") != -1:
+			self.dst = re.sub("!",'',self.dst)
 			if self.dst.find(self.snort_vars["HOME_NET"]) != -1:
 				self.dst = self.snort_vars["EXTERNAL_NET"]
 			elif self.dst.find(self.snort_vars["EXTERNAL_NET"]) != -1:
