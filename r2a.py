@@ -165,8 +165,8 @@ class r2a:
 					r = self.packets[start]
 				elif length > 1:
 					r = self.packets[start:start+(length)]
-				wrpcap("output/goodstreams/%s.pcap" % sid, r) 
-				good_rule = open("output/goodstreams/%s.rule" % sid,'w') 
+				wrpcap("output/goodstreams/%s-001-rule2alert-public-tp-01.pcap" % sid, r) 
+				good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
 				good_rule.write(self.rules_toprint[sid]) 
 				#print self.rules_toprint[sid]
 				good_rule.close() 
@@ -179,8 +179,8 @@ class r2a:
 					r = self.packets[start]
 				elif length > 1:
 					r = self.packets[start:start+(length)]
-				wrpcap("output/failstreams/%s.pcap" % badsid, r) 
-				fail_rule = open("output/failstreams/%s.rule" % badsid,'w') 
+				wrpcap("output/failstreams/%s-001-rule2alert-public-tp-01.pcap" % badsid, r) 
+				fail_rule = open("output/failstreams/%s.rules" % badsid,'w') 
 				fail_rule.write(self.rules_toprint[badsid]) 
 				#print self.rules_toprint[sid] 
 				fail_rule.close() 

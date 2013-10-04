@@ -56,6 +56,10 @@ python r2a.py -C /etc/suricata/suricata.yaml -f rules/emerging-all.rules -w test
 After whch you will have all the rule/pcap pairs under the rules2alert/output directory.
 
 )
+
+You can use the generated output rule/pcap pairs with the RegressionScript -
+https://github.com/pevma/RegressionScript
+
 NOTE: Due to lack of not yet implemented support for some rule language keywords not all 'failed' rules/pcap pairs are real failures.
 
 
