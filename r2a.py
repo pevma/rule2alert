@@ -24,7 +24,12 @@ class r2a:
 	def __init__(self, options):
 		#Command line options
 		self.options = options
-		#Snort conf variables
+		#Suricata/Snort conf variables
+		
+		if self.options.Dot1Q and self.options.QinQ:
+		  print "You can not provide both --Dot1Q and --QinQ options. Please choose only one !"
+		  sys.exit(0)
+		  
 		if not self.options.snort_conf and not self.options.suri_conf : 
 			if not self.options.extNet or not self.options.homeNet:
 				print "If no snort conf or suricata.yaml conf, please provide ExtNet and HomeNet variables via command line"
@@ -94,7 +99,7 @@ class r2a:
 	
 					print "Building Rule: %s" % str(r.sid)
 					
-					self.ContentGen = PayloadGenerator(r, self.snort_vars)
+					self.ContentGen = PayloadGenerator(r, self.snort_vars, self.options)
 
 					if self.ContentGen.notSupported:
 						continue
@@ -165,11 +170,29 @@ class r2a:
 					r = self.packets[start]
 				elif length > 1:
 					r = self.packets[start:start+(length)]
-				wrpcap("output/goodstreams/%s-001-rule2alert-public-tp-01.pcap" % sid, r) 
-				good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
-				good_rule.write(self.rules_toprint[sid]) 
-				#print self.rules_toprint[sid]
-				good_rule.close() 
+					
+				if self.options.Dot1Q:
+				  pcap_id = "002-rule2alert_IPv4_Dot1Q"
+				  wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
+				  good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				  good_rule.write(self.rules_toprint[sid]) 
+				  good_rule.close() 
+				  
+				elif self.options.QinQ:
+				  pcap_id = "003-rule2alert_IPv4_QinQ"
+				  wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
+				  good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				  good_rule.write(self.rules_toprint[sid]) 
+				  good_rule.close() 
+				  
+				else:
+				  wrpcap("output/goodstreams/%s-001-rule2alert_IPv4-public-tp-01.pcap" % sid, r) 
+				  good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				  good_rule.write(self.rules_toprint[sid]) 
+				  #print self.rules_toprint[sid]
+				  good_rule.close() 
+				  
+				  
 				
 			if self.failSids:
 			  for badsid in self.failSids:
@@ -238,7 +261,10 @@ def parseArgs():
 	parser.add_option("-f", help="Read in snort rule file", action="store", type="string", dest="rule_file")
 	parser.add_option("-F", help="Write failed streams to pcap", action="store_true", dest="failStream")
 	parser.add_option("-w", help="Name of pcap file", action="store", type="string", dest="pcap")
-
+	parser.add_option("--Dot1Q", help="Dot1Q option - add VLAN ID", action="store_true", dest="Dot1Q")
+	parser.add_option("--QinQ", help="QinQ option - add QinQ ID", action="store_true", dest="QinQ")
+	
+	
 	parser.add_option("-v", help="Verbose hex output of raw alert", action="store_true", dest="hex")
 	parser.add_option("-t", help="Test rule against current snort configuration", action="store_true", dest="testSnort")
 	parser.add_option("-T", help="Test rule against current Suricata configuration", action="store_true", dest="testSuricata")
@@ -253,7 +279,8 @@ def parseArgs():
 		sys.exit(0)
 
 	(options, args) = parser.parse_args(sys.argv)
-
+	
+	
 	r = r2a(options)
 	r.main()
 

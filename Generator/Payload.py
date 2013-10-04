@@ -14,8 +14,10 @@ class PayloadGenerator:
 	contents = []
 	uricontents = []
 	itered = []
+	
 	#def __init__(self, rule_contents, flow):
-	def __init__(self, rule, snort_vars):
+	def __init__(self, rule, snort_vars, command_line_options):
+		self.cmd_options = command_line_options
 		self.rule = rule
 		self.contents = self.rule.contents
 		self.uricontents = self.rule.uricontents
@@ -68,6 +70,7 @@ class PayloadGenerator:
 		self.packets       = []
 		self.parseComm(self.rule.rawsrcports, self.rule.rawdesports)
 		#self.build()
+		
 		
 	def build(self):
 		#Simple HTTP string based checks
@@ -210,15 +213,61 @@ class PayloadGenerator:
 				seq_num = random.randint(1024,(2**32)-1)
 				ack_num = random.randint(1024,(2**32)-1)
 				
-			#This is the actual data packet that will be sent containing the payload
-			p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags=flag, sport=source_port, dport=dest_port, seq=seq_num, ack=ack_num)/payload
+				
+				
 			
-			#We need to ACK the packet
-			returnAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=p.ack, ack=(p.seq + len(p[Raw])))
-			
-			#Now we build the Finshake
-			finAck = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags="FA", sport=source_port, dport=dest_port, seq=returnAck.ack, ack=returnAck.seq)
-			finalAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=finAck.ack, ack=finAck.seq+1)
+			if self.cmd_options.Dot1Q:
+			  # we add Dot1Q (VLAN ID) to the packets
+			  #This is the actual data packet that will be sent containing the payload
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags=flag, sport=source_port, dport=dest_port, seq=seq_num, ack=ack_num)/payload
+			  p.tags = Dot1Q(vlan=1111)
+			  
+			  #We need to ACK the packet
+			  returnAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=p.ack, ack=(p.seq + len(p[Raw])))
+			  returnAck.tags = Dot1Q(vlan=1111)
+			  
+			  #Now we build the Finshake
+			  finAck = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags="FA", sport=source_port, dport=dest_port, seq=returnAck.ack, ack=returnAck.seq)
+			  finAck.tags = Dot1Q(vlan=1111)
+			  
+			  finalAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=finAck.ack, ack=finAck.seq+1)
+			  finalAck.tags = Dot1Q(vlan=1111)
+			  
+			elif self.cmd_options.QinQ:
+			  # we add QinQ to packets
+			  #This is the actual data packet that will be sent containing the payload
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags=flag, sport=source_port, dport=dest_port, seq=seq_num, ack=ack_num)/payload
+			  p.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+			  p.tags[Dot1Q].tpid = 0x88a8
+			  
+			  #We need to ACK the packet
+			  returnAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=p.ack, ack=(p.seq + len(p[Raw])))
+			  returnAck.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+			  returnAck.tags[Dot1Q].tpid = 0x88a8
+			  
+			  #Now we build the Finshake
+			  finAck = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags="FA", sport=source_port, dport=dest_port, seq=returnAck.ack, ack=returnAck.seq)
+			  finAck.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+			  finAck.tags[Dot1Q].tpid = 0x88a8
+			  
+			  finalAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=finAck.ack, ack=finAck.seq+1)
+			  finalAck.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+			  finalAck.tags[Dot1Q].tpid = 0x88a8
+			  
+			  
+			else:
+			  # else we stick to the default IPv4 and no VLAN tags
+			  #This is the actual data packet that will be sent containing the payload
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags=flag, sport=source_port, dport=dest_port, seq=seq_num, ack=ack_num)/payload
+			  
+			  #We need to ACK the packet
+			  returnAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=p.ack, ack=(p.seq + len(p[Raw])))
+			  
+			  #Now we build the Finshake
+			  finAck = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/TCP(flags="FA", sport=source_port, dport=dest_port, seq=returnAck.ack, ack=returnAck.seq)
+			  finalAck = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=dest_ip, dst=source_ip)/TCP(flags="A", sport=dest_port, dport=source_port, seq=finAck.ack, ack=finAck.seq+1)
+			  
+			  
 			
 			
 			self.packets.append(p)
@@ -238,8 +287,24 @@ class PayloadGenerator:
 				packet[TCP].window = mssLen 
 				
 		elif self.proto == "udp" or "ip":
-			p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/UDP(sport=source_port, dport=dest_port)/payload
-			self.packets.append(p)
+			if self.cmd_options.Dot1Q:
+			  # we add Dot1Q (VLAN ID) to the packets
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/UDP(sport=source_port, dport=dest_port)/payload
+			  p.tags = Dot1Q(vlan=1111)
+			  self.packets.append(p)
+			  
+			elif self.cmd_options.QinQ:
+			  # we add QinQ to packets
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/UDP(sport=source_port, dport=dest_port)/payload
+			  p.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+			  p.tags[Dot1Q].tpid = 0x88a8
+			  self.packets.append(p)
+			  
+			else:
+			  # else we stick to the default IPv4 and no VLAN tags
+			  p = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=source_ip, dst=dest_ip)/UDP(sport=source_port, dport=dest_port)/payload
+			  self.packets.append(p)
+			  
 			
 	def build_handshake(self):
 		ipsrc   = self.ip.src
@@ -260,11 +325,39 @@ class PayloadGenerator:
 		client_isn = random.randint(1024, (2**32)-1)
 		server_isn = random.randint(1024, (2**32)-1)
 		
-		syn = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="S", sport=portsrc, dport=portdst, seq=client_isn)
-		
-		synack = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=ipdst, dst=ipsrc)/TCP(flags="SA", sport=portdst, dport=portsrc, seq=server_isn, ack=syn.seq+1)
-		
-		ack = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="A", sport=portsrc, dport=portdst, seq=syn.seq+1, ack=synack.seq+1)
+		if self.cmd_options.Dot1Q:
+		  # we add Dot1Q (VLAN ID) to the packets
+		  syn = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="S", sport=portsrc, dport=portdst, seq=client_isn)
+		  syn.tags = Dot1Q(vlan=1111)
+		  
+		  synack = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=ipdst, dst=ipsrc)/TCP(flags="SA", sport=portdst, dport=portsrc, seq=server_isn, ack=syn.seq+1)
+		  synack.tags = Dot1Q(vlan=1111)
+		  
+		  ack = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="A", sport=portsrc, dport=portdst, seq=syn.seq+1, ack=synack.seq+1)
+		  ack.tags = Dot1Q(vlan=1111)
+		  
+		  
+		elif self.cmd_options.QinQ:
+		  # we add QinQ to packets
+		  syn = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="S", sport=portsrc, dport=portdst, seq=client_isn)
+		  syn.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+		  syn.tags[Dot1Q].tpid = 0x88a8
+		  
+		  synack = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=ipdst, dst=ipsrc)/TCP(flags="SA", sport=portdst, dport=portsrc, seq=server_isn, ack=syn.seq+1)
+		  synack.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+		  synack.tags[Dot1Q].tpid = 0x88a8
+		  
+		  ack = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="A", sport=portsrc, dport=portdst, seq=syn.seq+1, ack=synack.seq+1)
+		  ack.tags = Dot1AD(vlan=666)/Dot1Q(vlan=4094)
+		  ack.tags[Dot1Q].tpid = 0x88a8
+		  
+		else:
+		  # else we stick to the default IPv4 and no VLAN tags
+		  syn = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="S", sport=portsrc, dport=portdst, seq=client_isn)
+		  synack = Ether(src="dd:ee:ff:44:55:66", dst="aa:bb:cc:11:22:33")/IP(src=ipdst, dst=ipsrc)/TCP(flags="SA", sport=portdst, dport=portsrc, seq=server_isn, ack=syn.seq+1)
+		  ack = Ether(src="aa:bb:cc:11:22:33", dst="dd:ee:ff:44:55:66")/IP(src=ipsrc, dst=ipdst)/TCP(flags="A", sport=portsrc, dport=portdst, seq=syn.seq+1, ack=synack.seq+1)
+		  
+		  
 		
 		self.packets.append(syn)
 		self.packets.append(synack)

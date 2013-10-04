@@ -1,1 +1,1 @@
-This directory holds the goodstreams.
+This directory holds the corresponding streams.
