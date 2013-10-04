@@ -42,20 +42,30 @@ Rule language keywords support added:
 - “alert ip …..”
 
 New features:
+- Dot1Q (VLAN tag ID) - IEEE 802.1Q (**NOTE** latest community Scapy needed -  http://hg.secdev.org/scapy-com)
+- QinQ (double tagged) - IEEE 802.1ad also known as IEEE 802.QinQ (**NOTE** latest community Scapy needed -  http://hg.secdev.org/scapy-com)
 - suricata.yaml parser
 - logging of separate rules with corresponding pcaps that fail to generate an alert (rule to pcap pair)
 - logging of separate rules with corresponding pcaps that do generate an alert (rule to pcap pair)
 
-(
-EXAMPLE - to make use of the above two(in the rules2alert directory execute):
+####
+EXAMPLE 1 - to make use of the above two (in the rules2alert directory execute):
 
 python r2a.py -C /etc/suricata/suricata.yaml -f rules/emerging-all.rules -w test1.pcap -F -T -e 1.1.1.1 -m 192.168.1.1
 
 - given that you have emerging-all.rules in your rules directory under rules2alert.
 
+EXAMPLE 2 - VLAN ID , Dot1Q:
+
+python r2a.py -C /etc/suricata/suricata.yaml -f /root/Work/Python/rules2alerts/needed/rules/emerging-all.rules -w test1.pcap -F -T -e 1.1.1.1 -m 192.168.1.1 --Dot1Q
+
+EXAMPLE 3 -  QinQ:
+
+python r2a.py -C /etc/suricata/suricata.yaml -f /root/Work/Python/rules2alerts/needed/rules/emerging-all.rules -w test1.pcap -F -T -e 1.1.1.1 -m 192.168.1.1 --QinQ
+
 After whch you will have all the rule/pcap pairs under the rules2alert/output directory.
 
-)
+####
 
 You can use the generated output rule/pcap pairs with the RegressionScript -
 https://github.com/pevma/RegressionScript
