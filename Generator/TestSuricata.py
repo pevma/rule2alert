@@ -14,17 +14,37 @@ class SnortAlert:
 
 class TestSuricata:
     
-    def __init__(self, pcap, loaded_sids, ruleFile):
-        self.logfile = "/var/log/suricata/fast.log"
+    def __init__(self, pcap, loaded_sids, pass_the_options):
+	
+        self.ruleFile = pass_the_options.rule_file
         self.alerts = []
         self.alert_sids = []
         self.failSids = []
         self.goodSids = []
         self.pcap = pcap
         self.loaded_sids = loaded_sids
-	self.ruleFile = ruleFile
-        #self.cmd    = "snort -c %s -K none -q -A console -r %s" % (self.snort_conf, self.pcap)
-	self.cmd    = "suricata -c /etc/suricata/suricata.yaml -S %s -r %s" % (self.ruleFile, self.pcap)
+	
+	if not pass_the_options.suri_log:
+	  self.logfile = "/var/log/suricata/fast.log"
+	  self.logfile_run_option = ""
+	else:
+	  self.logdir = pass_the_options.suri_log
+	  self.logfile = pass_the_options.suri_log+"fast.log"
+	  self.logfile_run_option = "-l " + self.logdir
+	    
+	if not pass_the_options.suri_conf:
+	  self.suri_conf = "/etc/suricata/suricata.yaml"
+	else:
+	  self.suri_conf = pass_the_options.suri_conf
+	  
+	if not pass_the_options.suri_binary:
+	  self.suri_binary = "suricata"
+	else:
+	  self.suri_binary = pass_the_options.suri_binary
+	
+	
+	self.cmd    = "%s -c %s %s -S %s -r %s" % (self.suri_binary, self.suri_conf, self.logfile_run_option, self.ruleFile, self.pcap)
+	
 
     def run(self):
         p = Popen(self.cmd, shell=True, stdout=PIPE, stderr=PIPE)

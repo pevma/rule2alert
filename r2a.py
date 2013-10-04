@@ -234,7 +234,7 @@ class r2a:
 		self.failSids = t.run()
 
 	def test_suricata(self):
-		t = TestSuricata(self.options.pcap, self.sids, self.options.rule_file)
+		t = TestSuricata(self.options.pcap, self.sids, self.options)
 		(self.failSids, self.goodSids) = t.run()
 
 	def evasion(self):
@@ -258,6 +258,8 @@ def parseArgs():
 	
 	parser.add_option("-c", help="Read in snort configuration file", action="store", type="string", dest="snort_conf")
 	parser.add_option("-C", help="Read in suricata.yaml configuration file", action="store", type="string", dest="suri_conf")
+	parser.add_option("-B", help="Use a Suricata binary file from a custom location", action="store", type="string", dest="suri_binary")
+	parser.add_option("-L", help="Use a Suricata log directory from a custom location", action="store", type="string", dest="suri_log")
 	parser.add_option("-f", help="Read in snort rule file", action="store", type="string", dest="rule_file")
 	parser.add_option("-F", help="Write failed streams to pcap", action="store_true", dest="failStream")
 	parser.add_option("-w", help="Name of pcap file", action="store", type="string", dest="pcap")
