@@ -8,6 +8,7 @@ from Parser.RuleParser import *
 from Parser.SnortConf import *
 from Parser.SuriConf import *
 from Generator.Payload import *
+from Generator.PayloadIPv6 import *
 from Generator.TestSnort import *
 from Generator.TestSuricata import *
 from Generator.Evasion import *
@@ -99,7 +100,11 @@ class r2a:
 	
 					print "Building Rule: %s" % str(r.sid)
 					
-					self.ContentGen = PayloadGenerator(r, self.snort_vars, self.options)
+					if self.options.IPv6:
+					  self.ContentGen = PayloadGeneratorIPv6(r, self.snort_vars, self.options)
+					else:
+					  self.ContentGen = PayloadGenerator(r, self.snort_vars, self.options)
+					#self.ContentGen = PayloadGenerator(r, self.snort_vars, self.options)
 
 					if self.ContentGen.notSupported:
 						continue
@@ -171,7 +176,30 @@ class r2a:
 				elif length > 1:
 					r = self.packets[start:start+(length)]
 					
-				if self.options.Dot1Q:
+					
+				if self.options.IPv6:
+				  if self.options.Dot1Q:
+				    pcap_id = "005-rule2alert_IPv6_Dot1Q"
+				    wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
+				    good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				    good_rule.write(self.rules_toprint[sid]) 
+				    good_rule.close()
+				    
+				  elif self.options.QinQ:
+				    pcap_id = "006-rule2alert_IPv6_QinQ"
+				    wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
+				    good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				    good_rule.write(self.rules_toprint[sid]) 
+				    good_rule.close()
+				    
+				  else:
+				    pcap_id = "004-rule2alert_IPv6"
+				    wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
+				    good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
+				    good_rule.write(self.rules_toprint[sid]) 
+				    good_rule.close()
+				  
+				elif self.options.Dot1Q:
 				  pcap_id = "002-rule2alert_IPv4_Dot1Q"
 				  wrpcap("output/goodstreams/%s-%s-public-tp-01.pcap" % (sid, pcap_id), r) 
 				  good_rule = open("output/goodstreams/%s.rules" % sid,'w') 
@@ -263,6 +291,7 @@ def parseArgs():
 	parser.add_option("-f", help="Read in snort rule file", action="store", type="string", dest="rule_file")
 	parser.add_option("-F", help="Write failed streams to pcap", action="store_true", dest="failStream")
 	parser.add_option("-w", help="Name of pcap file", action="store", type="string", dest="pcap")
+	parser.add_option("-6", help="Enable IPv6 packet creation and testing for Suricata", action="store_true", dest="IPv6")
 	parser.add_option("--Dot1Q", help="Dot1Q option - add VLAN ID", action="store_true", dest="Dot1Q")
 	parser.add_option("--QinQ", help="QinQ option - add QinQ ID", action="store_true", dest="QinQ")
 	
