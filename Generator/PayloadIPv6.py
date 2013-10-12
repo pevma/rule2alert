@@ -6,6 +6,7 @@ from Protocols.HTTP import *
 from decimal import *
 import random
 from Parser.RuleParser import *
+import socket
 
 
 class PayloadGeneratorIPv6:
@@ -37,11 +38,24 @@ class PayloadGeneratorIPv6:
 		self.dst = ""
 		self.home = ""
 		self.ext  = ""
+		
+		#>>> adr = "fe80::20c:29ff:faf2:ab42"
+		#>>> if socket.inet_pton(socket.AF_INET6, adr):
+		  #...  print "Haleluia"
+		  #... else:
+		    #...  print "nnneeeeee"
+		    #... 
+		    
+		  
+		
+		print "self.rule.rawsources", self.rule.rawsources
 		if self.rule.rawsources == "any":
 			self.src = "any"
 		elif self.rule.rawsources.find("/") != -1:
 			self.src = self.rule.rawsources.split("/")[0]
+			print "self.rule.rawsources.split(\"/\")[0]", self.rule.rawsources.split("/")[0] 
 		elif self.rule.rawsources[1:] in self.snort_vars:
+			print "self.rule.rawsources[1:]", self.rule.rawsources[1:]
 			self.src = self.snort_vars[self.rule.rawsources[1:]]
 		else:
 			self.src = self.rule.rawsources
@@ -56,11 +70,14 @@ class PayloadGeneratorIPv6:
 			self.dst = self.rule.rawdestinations
 			
 		if self.rule.rawsources[1:] == "HOME_NET":
+			print "self.home", self.home
 			self.home = "src"
+			print "self.home", self.home
 		elif self.rule.rawdestinations[1:] == "HOME_NET":
 			self.home = "dst"
 			
 			
+		
 		self.sport	   = ""
 		self.dport	   = ""
 		self.proto	   = self.rule.proto
@@ -376,6 +393,69 @@ class PayloadGeneratorIPv6:
 			
 		return seq,ack
 		
+	def fixAndReturnAddress(self, address):
+	  
+	  #address = re.sub("\[",'',address)
+	  #address = re.sub("\]",'',address) 
+	  # to do
+	  # print
+	  # fix if no IPv6 found
+	  successful = False
+	  if address.find(",") != -1:
+	    #result = None
+	    #while result is None:
+	    for i in address.split(","):
+	      if i.find("/") and not i.find(".") != -1:
+		i = i.split("/")[0]
+		#i = "%s:%s" % (i[:i.rfind(":")],"1")
+	      
+	      try:
+		socket.inet_pton(socket.AF_INET6, i)
+		
+	      except:
+		#print str(e)
+		print " ERROR - IP address is NOT an IPv6 address - >", i
+		
+	      else:
+		successful = True
+		address = i
+		break 
+		#break out of the for loop 
+		#as soon as we find usable IPv6 address
+		
+	  elif address.find("/") and not address.find(".") != -1:
+	    address = address.split("/")[0]
+	    #print address , "after address = address.split(\"/\")[0]"
+	    #address = "%s:%s" % (address[:address.rfind(":")],"2")
+	    #address = "%s:%s" % (address,"2")
+	    #print address , "after 1 addition"
+	    try:
+	      socket.inet_pton(socket.AF_INET6, address)
+	      
+	    except:
+	      print " ERROR - IP address is NOT an IPv6 address - >" \
+	      , address
+	    else:
+	      successful = True
+	      
+	      
+	  else:
+	    try:
+	      socket.inet_pton(socket.AF_INET6, address)
+	      
+	    except:
+	      print " ERROR - IP address is NOT an IPv6 address - >" \
+	      , address
+	    else:
+	      successful = True
+	    
+	  if successful == False:
+	    sys.exit(1)
+	    #address = "111"
+	    
+	  
+	  return address
+	
 	def parseComm(self, sports, dports):
 		if self.proto == "tcp":
 			self.protocol = TCP()
@@ -392,7 +472,9 @@ class PayloadGeneratorIPv6:
 			self.notSupported = True
 			return 1
 			
+		print "self.src before", self.src
 		self.src = re.sub("\$",'',self.src)
+		print "self.src after", self.src
 		self.dst = re.sub("\$",'',self.dst)
 		sports   = re.sub("\$",'',sports)
 		dports   = re.sub("\$",'',dports)
@@ -404,24 +486,31 @@ class PayloadGeneratorIPv6:
 			if m:
 				self.src = re.sub(var, self.snort_vars[var], self.src)
 				self.src = re.sub("\$",'',self.src)
+				print "HOME_NET !!!!!!!!!!!!!!!" , self.src
 				break
 				
 		for var in self.snort_vars:
 			m = re.search(var, self.dst)
 			if m:
 				self.dst = re.sub(var, self.snort_vars[var], self.dst)
+				self.dst = re.sub("\$",'',self.dst)
 				break
 				
 		if self.src.find("[") != -1:
-			self.src = self.src.split(",")[0]
 			self.src = re.sub("\[",'',self.src)
 			self.src = re.sub("\]",'',self.src)
+			self.src = self.fixAndReturnAddress(self.src)
+			
+			#self.src = self.src.split(",")[0]
+			#self.src = re.sub("\[",'',self.src)
+			#self.src = re.sub("\]",'',self.src)
 			print self.src , "SELF>SRC"
 		
 		if self.dst.find("[") != -1:
-			self.dst = self.dst.split(",")[0]
+			#self.dst = self.dst.split(",")[0]
 			self.dst = re.sub("\[",'',self.dst)
 			self.dst = re.sub("\]",'',self.dst)
+			self.dst = self.fixAndReturnAddress(self.dst)
 			print self.dst , "SELF>DST"
 			
 		if self.src.find("!") != -1:
@@ -442,18 +531,38 @@ class PayloadGeneratorIPv6:
 		#If the source is using CIDR notiation
 		#Just pick the first IP in the subnet
 		if self.src.find("/") != -1:
-			self.src = self.src.split("/")[0]
-			self.src = "%s.%s" % (self.src[:self.src.rfind(".")],"1")
+			self.src = self.fixAndReturnAddress(self.src)
+			#print "HEREEEEEEEEEEEEEE"
+			#self.src = self.src.split("/")[0]
+			#self.src = "%s:%s" % (self.src[:self.src.rfind(":")],"1")
+			#print self.src , "NETWORK - after remake !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 		#Same for the dst
 		if self.dst.find("/") != -1:
-			self.dst = self.dst.split("/")[0]
-			self.dst = "%s.%s" % (self.dst[:self.dst.rfind(".")],"1")
+			self.dst = self.fixAndReturnAddress(self.dst)
+			#self.dst = self.dst.split("/")[0]
+			#self.dst = "%s:%s" % (self.dst[:self.dst.rfind(":")],"1")
 		#If any on either src or dst just use any IP
 		if self.src == "any":
 			self.src = "fe80::20c:29ff:fef3:cf38"
 		if self.dst == "any":
 			self.dst = "fe80::20c:29ff:faf2:ab42"
 			
+		try:
+		  socket.inet_pton(socket.AF_INET6, self.src)
+		  
+		except:
+		  #print str(e)
+		  print " ERROR - SRC address NOT an IPv6 address "
+		  sys.exit(1)
+		  
+		try:
+		  socket.inet_pton(socket.AF_INET6, self.dst)
+		  
+		except:
+		  print " ERROR - DST address NOT an IPv6 address "
+		  sys.exit(1)
+		  
+		
 		try:
 			self.ip.src = self.src
 			self.ip.dst = self.dst

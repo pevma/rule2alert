@@ -13,6 +13,7 @@ from Generator.TestSnort import *
 from Generator.TestSuricata import *
 from Generator.Evasion import *
 from Generator.Flowbits import *
+from Generator.FlowbitsIPv6 import *
 from optparse import OptionParser
 import os,sys
 import re
@@ -139,13 +140,16 @@ class r2a:
 					print "Parser failed - skipping rule"
 					continue
 
-		print "Loaded %d rules succesfully!" % self.rules_loaded
+		print "\n\nLoaded %d rules succesfully!\n" % self.rules_loaded
 
 		#added flowbits support
-		if dict_flowbits:
-		  print "Loading flowbits rules...\n\n\n"
+		if dict_flowbits and not self.options.IPv6:
+		  print "Loading flowbits rules...\n\n"
 		  FlowbitsGenerator(dict_flowbits, self.sidGroupReturn(), self.PacketsReturn(), self.sids, self.sid_proto)
 		
+		if dict_flowbits and self.options.IPv6:
+		  print "Loading flowbits rules...\n\n"
+		  FlowbitsGeneratorIPv6(dict_flowbits, self.sidGroupReturn(), self.PacketsReturn(), self.sids, self.sid_proto)
 		
 		if self.packets and self.options.pcap:
 			print "Writing packets to pcap..."
