@@ -99,6 +99,7 @@ class r2a:
 						self.count -= 1
 						self.rules.append(snort_rule)
 	
+					print "\n|---------------------|"
 					print "Building Rule: %s" % str(r.sid)
 					
 					if self.options.IPv6:
@@ -145,16 +146,18 @@ class r2a:
 		#added flowbits support
 		if dict_flowbits and not self.options.IPv6:
 		  print "Loading flowbits rules...\n\n"
-		  FlowbitsGenerator(dict_flowbits, self.sidGroupReturn(), self.PacketsReturn(), self.sids, self.sid_proto)
+		  FlowbitsGenerator(dict_flowbits, self.sidGroupReturn(), \
+		  self.PacketsReturn(), self.sids, self.sid_proto)
 		
 		if dict_flowbits and self.options.IPv6:
 		  print "Loading flowbits rules...\n\n"
-		  FlowbitsGeneratorIPv6(dict_flowbits, self.sidGroupReturn(), self.PacketsReturn(), self.sids, self.sid_proto)
+		  FlowbitsGeneratorIPv6(dict_flowbits, self.sidGroupReturn(), \
+		  self.PacketsReturn(), self.sids, self.sid_proto)
 		
 		if self.packets and self.options.pcap:
 			print "Writing packets to pcap..."
 			self.write_packets()
-			print "Finished writing packets" #we need to move that after the flowbits below !!
+			print "Finished writing packets" 
 		
 
 		if self.options.testSnort and self.options.pcap:
