@@ -34,6 +34,40 @@ class FlowbitsGenerator:
       flowbit_sids = dict_flowbits[flowbit_name].split(',')
       self.flowbit_name_options = [ word for word in flowbit_sids if word.isalpha() ]
       
+      # we make sure we delete any flowbit sid that has failed to
+      # build previously due to various of reasons.
+      # If the sid is not in the sid-proto map - it has failed to build
+      # hence if sid is present in the flowbits - it should removed
+      for value in flowbit_sids:
+	if ( value.isdigit() and (value not in self.sid_proto.keys()) ):
+	  #print "sid not previously existing/created ->", value
+	  #print "removing sid from  flowbit sequence"
+	  sid_list_location = flowbit_sids.index(value)
+	  try:
+	    # we try to get the next sid in the sequence and remove 
+	    # the current one
+	    next_sid = next(sid for sid in flowbit_sids[sid_list_location+1:] if (sid.isdigit() and sid != value))
+	  except StopIteration:
+	    # if this is the last sid in the list, catch the StopIteration
+	    # instead of err out
+	    next_sid = None
+	    pass
+	    
+	  
+	  # slice/remove from the list
+	  if next_sid:
+	    #print "next sid", next_sid
+	    next_sid_list_location = flowbit_sids.index(next_sid)
+	    del flowbit_sids[sid_list_location:next_sid_list_location]
+	    #print "flowbit_sids", flowbit_sids
+	  else:
+	    #print "No next sid present in list"
+	    del flowbit_sids[sid_list_location:]
+	    #print "flowbit_sids", flowbit_sids
+	  
+	  
+	
+      
       #if we have many flowbits but all of them have just "set"
       if len(set(self.flowbit_name_options)) == 1 and "set" in set(self.flowbit_name_options):
 	print "found only SET in flowbit name ",  flowbit_name , dict_flowbits[flowbit_name]

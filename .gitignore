@@ -1,0 +1,9 @@
+*.rules
+*.rule
+*.pcap
+*.pyc
+fail_suricata.log
+success_suricata.log
+*~
+
+
